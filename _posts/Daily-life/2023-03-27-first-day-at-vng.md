@@ -3,6 +3,7 @@ title: First day at VNG
 date: 2023-03-27 21:00:00 +0700
 categories: [Daily life]
 tags: [internship, vng]     # TAG names should always be lowercase
+pin: true
 ---
 
 So this is my first blog, and I decide to write about my first day at VNG Corp. I felt so lucky and thankful that I had a chance to be an intern at the first Vietnamese tech 'unicorn', even though I was only a second-year undergraduate! There are also two friends of mine in [BKISC club](http://bkisc.com) joining VNG as interns.
