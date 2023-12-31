@@ -1,0 +1,78 @@
+from random import getrandbits
+from galois import GF as gl
+import numpy as np
+from pwn import *
+from sage.all import *
+from randcrack import RandCrack
+DECK = "🂡🂢🂣🂤🂥🂦🂧🂨🂩🂪🂫🂭🂮"
+
+F = gl(int(13)) # lucky number
+
+conn = remote('blind-guess.chal.imaginaryctf.org',1337)
+q=conn.recvlines(1)
+mat=[]
+guess=[]
+hist=[]
+for j in range(10):
+    print(j)
+    freq=[[0 for i in range(13)] for _ in range(10)]
+    for i in range(125):
+        conn.sendline(b'play')
+        conn.sendline(b'1')
+        q=conn.recvlines(1)
+        if j!=0 or i != 0:
+            q=conn.recvlines(1)
+        a=[0 for i in range(j)]+[1]+[0 for i in range(10-j-1)]
+        payl=''
+        for ind in a:
+            payl+=DECK[ind]
+            payl+=' '
+        conn.sendline(payl.encode())   
+        q=conn.recvlines(1)
+        total=int(q[0].split(b'guessed ')[1].split(b' cards')[0])
+        card=[DECK.index(i) for i in q[0].split(b'My hand was: ')[1].decode().split()]
+        hist.append(card)
+        if total == 0:
+            for i in range(10):
+                freq[i][card[i]] -= 9999
+        else:    
+            for i in range(10):
+                freq[i][card[i]] += total
+    guess=[i.index(max(i)) for i in freq]
+    mat.append(guess)
+
+mat=Matrix(GF(13),mat)
+mat=mat.transpose()
+print(mat)
+mat1=list(mat)
+R.<z>=mat.charpoly().splitting_field()
+J, P = mat.change_ring(R).jordan_form(transformation=True)
+DECK = "🂡🂢🂣🂤🂥🂦🂧🂨🂩🂪🂫🂭🂮"
+rc=RandCrack()
+for i in range(624):
+    print(i)
+    lam = J[-1][-1]
+    c=vector(GF(13),hist[-624+i])
+    d=vector(GF(13),hist[-625+i])
+    l=(P^-1*d)
+    r=(P^-1*c)
+    rand=int((r[-1]*l[-1]^-1).log(J[-1][-1]))
+    rc.submit(rand)
+money=[100,1100,12100,133100,1464100,16105100,177156100]
+for i in range(7):
+    conn.sendline(b'play')
+    conn.sendline(str(money[i]).encode())
+    pred=rc.predict_getrandbits(32)
+    c=vector(GF(13),hist[-1])
+    mat2=Matrix(GF(13),mat1)
+    d=list((mat2**pred)*c)
+    hist.append(d)
+    print(d)
+    payload=''
+    for ind in d:
+        payload+=DECK[ind]
+        payload+=' '
+    print(payload)
+    conn.sendline(payload.encode())
+conn.sendline(b'buy flag')
+conn.interactive()
